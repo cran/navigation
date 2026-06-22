@@ -1,4 +1,4 @@
-## ---- message=F, warning=FALSE------------------------------------------------
+## ----message=F, warning=FALSE-------------------------------------------------
 library(navigation)
 
 ## -----------------------------------------------------------------------------
@@ -12,12 +12,12 @@ class(traj)
 ## -----------------------------------------------------------------------------
 timing <- make_timing(
   nav.start = 0, # time at which to begin filtering
-  nav.end = 15,
+  nav.end = 100,
   freq.imu = 100, # frequency of the IMU, can be slower wrt trajectory frequency
   freq.gps = 1, # gnss frequency
   freq.baro = 1, # barometer frequency (to disable, put it very low, e.g. 1e-5)
-  gps.out.start = 8, # to simulate a GNSS outage, set a time before nav.end
-  gps.out.end = 13
+  gps.out.start = 60, # to simulate a GNSS outage, set a time before nav.end
+  gps.out.end = 80
 )
 
 ## -----------------------------------------------------------------------------
@@ -59,8 +59,8 @@ wrong_KF.mdl$imu <- make_sensor(name = "imu", frequency = timing$freq.imu, error
 wrong_KF.mdl$gps <- snsr.mdl$gps
 wrong_KF.mdl$baro <- snsr.mdl$baro
 
-## ---- message=FALSE, results='hide', eval=T-----------------------------------
-num.runs <- 5 # number of Monte-Carlo simulations
+## ----message=FALSE, results='hide', eval=T------------------------------------
+num.runs <- 10 # number of Monte-Carlo simulations
 res <- navigation(
   traj.ref = traj,
   timing = timing,
@@ -71,10 +71,10 @@ res <- navigation(
   PhiQ_method = "1",
   parallel.ncores = 1,
   P_subsampling = timing$freq.imu,
-  compute_PhiQ_each_n = 50
+  compute_PhiQ_each_n = 20
 ) # keep one covariance every second
 
-## ---- message=FALSE, results='hide', eval=T-----------------------------------
+## ----message=FALSE, results='hide', eval=T------------------------------------
 wrong_res <- navigation(
   traj.ref = traj,
   timing = timing,
@@ -85,24 +85,24 @@ wrong_res <- navigation(
   PhiQ_method = "1",
   parallel.ncores = 1,
   P_subsampling = timing$freq.imu,
-  compute_PhiQ_each_n = 50
+  compute_PhiQ_each_n = 20
 ) # keep one covariance every second
 
-## ---- eval=T------------------------------------------------------------------
+## ----eval=T-------------------------------------------------------------------
 pe_res <- compute_mean_position_err(res, step = 25)
 pe_wrong_res <- compute_mean_position_err(wrong_res, step = 25)
 
 oe_res <- compute_mean_orientation_err(res, step = 25)
 oe_wrong_res <- compute_mean_orientation_err(wrong_res, step = 25)
 
-## ---- results='hide', fig.align='center', fig.width=7, fig.height=5, eval=T----
+## ----results='hide', fig.align='center', fig.width=7, fig.height=5, eval=T, fig.alt=c("NEES statistics for the correct sensor model.", "NEES statistics for the wrong sensor model.", "Coverage statistics for the correct sensor model.", "Coverage statistics for the wrong sensor model.")----
 nees <- compute_nees(res, step = timing$freq.imu)
 wrong_nees <- compute_nees(wrong_res, step = timing$freq.imu)
 
 coverage <- compute_coverage(res, alpha = 0.7, step = timing$freq.imu)
 wrong_coverage <- compute_coverage(wrong_res, alpha = 0.7, step = timing$freq.imu)
 
-## ----  fig.height=5, fig.align='center', fig.width=6, eval=T------------------
+## ----fig.height=5, fig.align='center', fig.width=6, eval=T, fig.alt=c("Mean position error comparison between the correct and wrong sensor models.", "Mean orientation error comparison between the correct and wrong sensor models.", "NEES comparison between the correct and wrong sensor models.", "Coverage comparison between the correct and wrong sensor models.")----
 plot(pe_res, pe_wrong_res, legend = c("correct model", "wrong model"))
 
 plot(oe_res, oe_wrong_res, legend = c("correct model", "wrong model"))

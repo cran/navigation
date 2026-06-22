@@ -1,4 +1,4 @@
-## ---- message=F, warning=FALSE------------------------------------------------
+## ----message=F, warning=FALSE-------------------------------------------------
 library(navigation)
 
 ## -----------------------------------------------------------------------------
@@ -6,7 +6,7 @@ data("lemniscate_traj_ned")
 head(lemniscate_traj_ned)
 traj <- make_trajectory(data = lemniscate_traj_ned, system = "ned")
 
-## ----  fig.height=4, fig.align='center', fig.width=7--------------------------
+## ----fig.height=4, fig.align='center', fig.width=7, fig.alt=c("Reference lemniscate trajectory split across navigation states.", "Three-dimensional view of the reference lemniscate trajectory.")----
 # plot traj
 plot(traj, n_split = 6)
 plot(traj, threeD = TRUE)
@@ -14,12 +14,12 @@ plot(traj, threeD = TRUE)
 ## -----------------------------------------------------------------------------
 timing <- make_timing(
   nav.start = 0, # time at which to begin filtering
-  nav.end = 15,
+  nav.end = 100,
   freq.imu = 100, # frequency of the IMU, can be slower wrt trajectory frequency
   freq.gps = 1, # GNSS frequency
   freq.baro = 1, # barometer frequency (to disable, put it very low, e.g. 1e-5)
-  gps.out.start = 8 , # to simulate a GNSS outage, set a time before nav.end
-  gps.out.end = 13
+  gps.out.start = 60 , # to simulate a GNSS outage, set a time before nav.end
+  gps.out.end = 80
 )
 
 ## -----------------------------------------------------------------------------
@@ -58,8 +58,8 @@ KF.mdl$imu <- make_sensor(name = "imu", frequency = timing$freq.imu, error_model
 KF.mdl$gps <- snsr.mdl$gps
 KF.mdl$baro <- snsr.mdl$baro
 
-## ---- message=FALSE, results='hide', eval=T-----------------------------------
-num.runs <- 5 # number of Monte-Carlo simulations
+## ----message=FALSE, results='hide', eval=T------------------------------------
+num.runs <- 20 # number of Monte-Carlo simulations
 res <- navigation(
   traj.ref = traj,
   timing = timing,
@@ -68,38 +68,38 @@ res <- navigation(
   num.runs = num.runs,
   noProgressBar = TRUE,
   PhiQ_method = "1", # order of the Taylor expansion of the matrix exponential used to compute Phi and Q matrices
-  compute_PhiQ_each_n = 50, # compute new Phi and Q matrices every n IMU steps (execution time optimization)
+  compute_PhiQ_each_n = 20, # compute new Phi and Q matrices every n IMU steps (execution time optimization)
   parallel.ncores = 1,
   P_subsampling = timing$freq.imu
 ) # keep one covariance every second
 
-## ---- fig.height=5, fig.align='center', fig.width=8, eval=T-------------------
+## ----fig.height=5, fig.align='center', fig.width=8, eval=T, fig.alt="Navigation simulation results with trajectory and error analysis panels."----
 plot(res, plot3d = F, error_analysis = T)
 
-## ---- message=FALSE, eval=T---------------------------------------------------
+## ----message=FALSE, eval=T----------------------------------------------------
 # mean position error
 pe <- compute_mean_position_err(res, step = 25)
 
 # mean orientation error
 oe <- compute_mean_orientation_err(res, step = 25)
 
-## ---- message=FALSE, results='hide',  eval=T----------------------------------
+## ----message=FALSE, results='hide',  eval=T-----------------------------------
 # NEES
 nees <- compute_nees(res, idx = 1:6, step = 100)
 
 # Empirical coverage
 coverage <- compute_coverage(res, alpha = 0.7, step = 100, idx = 1:6)
 
-## ----  fig.height=5, fig.align='center', fig.width=6, eval=T------------------
+## ----fig.height=5, fig.align='center', fig.width=6, eval=T, fig.alt=c("Navigation state errors without covariance bounds.", "Navigation state errors with covariance bounds for the selected state indexes.", "Mean position error over time.", "Mean orientation error over time.")----
 plot_imu_err_with_cov(res, error = FALSE)
 
-## ----  fig.height=5, fig.align='center', fig.width=6, eval=T------------------
+## ----fig.height=5, fig.align='center', fig.width=6, eval=T, fig.alt=c("Navigation state errors with covariance bounds for the selected state indexes.", "Mean position error over time.", "Mean orientation error over time.")----
 plot_nav_states_with_cov(res, idx = 1:5, error = TRUE)
 
 plot(pe)
 plot(oe)
 
-## ----  fig.height=5, fig.align='center', fig.width=6, eval=T------------------
+## ----fig.height=5, fig.align='center', fig.width=6, eval=T, fig.alt=c("NEES statistic over time.", "Empirical coverage statistic over time.")----
 plot(nees)
 plot(coverage)
 
